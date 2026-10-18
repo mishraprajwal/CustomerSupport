@@ -64,3 +64,8 @@ def test_augmented_prompt_contains_context(tmp_path):
     a = make_agent(tmp_path, Fake())
     ans = a.ask("How long do refunds take?")
     assert ans.text == "ok [1]" and "[1]" in seen["m"][-1]["content"] and "refund" in seen["m"][-1]["content"].lower()
+
+
+def test_stemming_matches_word_forms_but_not_ids():
+    assert tokenize("refunds refunded") == ["refund", "refund"]
+    assert "err-4012" in tokenize("ERR-4012")

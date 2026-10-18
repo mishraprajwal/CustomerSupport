@@ -1,4 +1,6 @@
 numpy>=1.24
+faiss-cpu>=1.8
+nltk>=3.8
 sentence-transformers>=3.0
 ollama>=0.3
 pytest>=8.0

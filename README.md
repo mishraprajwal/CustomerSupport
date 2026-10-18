@@ -17,7 +17,7 @@ Tests: `pytest` (no model downloads needed).
 | Stage | Module | Notes |
 |---|---|---|
 | Ingestion | `ingest.py`, `embeddings.py` | Heading-aware chunks (≤800 chars, 120 overlap), heading prefixed to each chunk, source metadata kept |
-| Retrieval | `retrieval.py` | Independent BM25 + dense search, fused with Reciprocal Rank Fusion; optional cross-encoder rerank |
+| Retrieval | `retrieval.py` | BM25 (NLTK stopwords + stemming) + FAISS dense search, fused with Reciprocal Rank Fusion; optional cross-encoder rerank |
 | Augmentation | `generate.py` | Numbered context + last 3 turns; follow-ups rewritten to standalone queries |
 | Generation | `generate.py` | Ollama; answers only from context, cites `[n]`, says "not found" otherwise |
 
@@ -25,11 +25,11 @@ Tests: `pytest` (no model downloads needed).
 
 - BM25 now runs over the **whole corpus**, not just FAISS' top-k, so exact IDs/error codes (`ERR-4012`) are never missed.
 - **RRF** replaces min-max + harmonic mean (which divided by zero on a 0 score and was unstable on small candidate sets); the unused `WEIGHT_SEMANTIC` is now real `w_dense`/`w_sparse`.
-- Identifier-preserving tokenizer; no NLTK downloads.
+- NLTK stopwords + Porter stemming ("refunds" matches "refund"), with identifiers like `ERR-4012` kept exact; falls back to a built-in stopword list if NLTK data can't be downloaded.
 - Overlapping, heading-aware chunks with citations (original: char-split, no source).
 - Persistent index with embedder check (original mmap cache validated only by row count).
 - Guardrail: no lexical or semantic evidence → refuse without calling the LLM.
-- Dropped FAISS: exact numpy search is fast for support-sized KBs; swap in FAISS if you exceed ~1M chunks.
+- FAISS `IndexFlatIP` kept for dense search and saved to `index/vectors.faiss`; dimension is read from the model instead of hardcoded 384.
 
 ## Advanced vs. modular RAG
 

@@ -3,12 +3,12 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import numpy as np
+import faiss
 
 from .embeddings import get_embedder
 from .generate import NO_ANSWER, build_context, build_messages
 from .ingest import Chunk, ingest
-from .retrieval import HybridRetriever, load_reranker
+from .retrieval import HybridRetriever, build_faiss_index, load_reranker
 
 
 @dataclass
@@ -38,10 +38,11 @@ class SupportAgent:
             raise ValueError(f"No .txt/.md documents found in {docs_path}")
         emb = self.embedder.encode([c.text for c in chunks])
         self.dir.mkdir(parents=True, exist_ok=True)
-        np.save(self.dir / "embeddings.npy", emb)
+        index = build_faiss_index(emb)
+        faiss.write_index(index, str(self.dir / "vectors.faiss"))
         (self.dir / "chunks.json").write_text(json.dumps([c.__dict__ for c in chunks]))
         (self.dir / "meta.json").write_text(json.dumps({"embedder": self.embedder_name}))
-        self._activate(chunks, emb)
+        self._activate(chunks, index)
         return len(chunks)
 
     def load_index(self) -> None:
@@ -49,11 +50,11 @@ class SupportAgent:
         if meta["embedder"] != self.embedder_name:
             raise ValueError(f"Index built with {meta['embedder']!r}, not {self.embedder_name!r}; rebuild it.")
         chunks = [Chunk(**c) for c in json.loads((self.dir / "chunks.json").read_text())]
-        self._activate(chunks, np.load(self.dir / "embeddings.npy"))
+        self._activate(chunks, faiss.read_index(str(self.dir / "vectors.faiss")))
 
-    def _activate(self, chunks, emb):
+    def _activate(self, chunks, index):
         self.chunks = chunks
-        self.retriever = HybridRetriever([c.text for c in chunks], emb, self.embedder, self.reranker)
+        self.retriever = HybridRetriever([c.text for c in chunks], index, self.embedder, self.reranker)
 
     # 2-4. Retrieval, augmentation, generation
     def ask(self, question: str, top_k: int = 4) -> Answer:
