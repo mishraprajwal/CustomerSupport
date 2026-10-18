@@ -29,7 +29,3 @@ Tests: `pytest` (no model downloads needed).
 - Overlapping, heading-aware chunks with source citations.
 - Persistent index (`index/vectors.faiss`) that records its embedder and refuses to load with a different one; vector dimension is read from the model.
 - Guardrail: no lexical or semantic evidence means the LLM is not called.
-
-## Advanced vs. modular RAG
-
-Not either/or: **modular is the architecture, advanced is the set of techniques plugged into it.** Hybrid search, reranking and query rewriting are "advanced" pre/post-retrieval techniques, each a swappable module here (embedder, retriever, reranker, LLM). Full modular RAG routing/agentic loops (multi-source, tool calls to CRM/order systems) are worth adding later, not for a first KB Q&A tool.
