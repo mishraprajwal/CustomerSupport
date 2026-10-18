@@ -21,15 +21,14 @@ Tests: `pytest` (no model downloads needed).
 | Augmentation | `generate.py` | Numbered context + last 3 turns; follow-ups rewritten to standalone queries |
 | Generation | `generate.py` | Ollama; answers only from context, cites `[n]`, says "not found" otherwise |
 
-## Improvements over [Rman410/hybrid-search](https://github.com/Rman410/hybrid-search)
+## Retrieval features
 
-- BM25 now runs over the **whole corpus**, not just FAISS' top-k, so exact IDs/error codes (`ERR-4012`) are never missed.
-- **RRF** replaces min-max + harmonic mean (which divided by zero on a 0 score and was unstable on small candidate sets); the unused `WEIGHT_SEMANTIC` is now real `w_dense`/`w_sparse`.
+- BM25 runs over the whole corpus alongside FAISS dense search, so exact IDs/error codes (`ERR-4012`) are never missed.
+- Reciprocal Rank Fusion merges the two rankings, with tunable `w_dense`/`w_sparse` weights.
 - NLTK stopwords + Porter stemming ("refunds" matches "refund"), with identifiers like `ERR-4012` kept exact; falls back to a built-in stopword list if NLTK data can't be downloaded.
-- Overlapping, heading-aware chunks with citations (original: char-split, no source).
-- Persistent index with embedder check (original mmap cache validated only by row count).
-- Guardrail: no lexical or semantic evidence → refuse without calling the LLM.
-- FAISS `IndexFlatIP` kept for dense search and saved to `index/vectors.faiss`; dimension is read from the model instead of hardcoded 384.
+- Overlapping, heading-aware chunks with source citations.
+- Persistent index (`index/vectors.faiss`) that records its embedder and refuses to load with a different one; vector dimension is read from the model.
+- Guardrail: no lexical or semantic evidence means the LLM is not called.
 
 ## Advanced vs. modular RAG
 
